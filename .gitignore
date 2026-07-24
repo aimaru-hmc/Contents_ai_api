@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.env
+
+data/uploads/
+data/parsed/
+data/layout/
+data/full_json/
+data/log/
+data/jobs/
