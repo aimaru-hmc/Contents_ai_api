@@ -334,6 +334,8 @@ def is_heading_like(
         return False
     if drop_body_size_lines and abs(ratio - 1.0) <= max(0.0, float(body_size_ratio_tolerance)):
         return False
+    if re.match(r"^[①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳]\s*", text) and not bold and ratio < 0.95:
+        return False
     if any(pattern.match(text) for pattern in HEADING_PATTERNS):
         return len(text) <= max_heading_chars
     if len(text) > max_heading_chars:
@@ -440,7 +442,7 @@ def extract_pdf_layout_pages(
                 for formatted in formatted_lines:
                     line_count += 1
                     plain_chars += len(formatted.split("] ", 1)[-1])
-            else:
+            elif parse_mode != "headings":
                 fallback_text = clean_extracted_pdf_text(page.extract_text() or "")
                 if fallback_text:
                     formatted_lines.append(f"[L s={body_size:.1f} r=1.00 x=0 y=0 b=0 i=0 f=f0] {fallback_text}")
@@ -1413,7 +1415,8 @@ def parse_pdf_if_needed(pdf_path: Path, parsed_dir: Path, args: argparse.Namespa
         parse_mode=args.parse_mode,
         max_heading_chars=args.max_heading_chars,
         drop_author_lines=args.drop_author_lines,
-        drop_body_size_lines=False,
+        drop_body_size_lines=args.drop_body_size_lines,
+        body_size_ratio_tolerance=args.body_size_ratio_tolerance,
     )
     parsed_text = parsed_pdf_text_for_file(
         pdf_path=pdf_path,
