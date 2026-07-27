@@ -92,10 +92,24 @@ python full_toc_v4.py --host 127.0.0.1 --port 8080
 python full_toc_v4.py --host 0.0.0.0 --port 8080
 ```
 
-상태 확인:
+DGX-H200 같은 외부 GPU 서버에서 테스트할 때도 같은 방식으로 실행합니다.
+
+```bash
+cd /path/to/Contents_ai_api
+source .venv/bin/activate
+python full_toc_v4.py --host 0.0.0.0 --port 8080
+```
+
+서버 안에서 확인:
 
 ```bash
 curl http://127.0.0.1:8080/health
+```
+
+외부 PC에서 확인:
+
+```bash
+curl http://SERVER_IP:8080/health
 ```
 
 정상 응답:

@@ -108,7 +108,29 @@ python full_toc_v4.py --host 0.0.0.0 --port 8080
 
 외부 PC에서 접속하려면 서버/보안망/방화벽에서 `8080` 포트가 열려 있어야 합니다.
 
-### 2.3 서버 상태 확인
+### 2.3 DGX-H200 실행 예시
+
+DGX-H200 같은 외부 GPU 서버에서도 FastAPI 실행 방식은 동일합니다.
+
+```bash
+cd /path/to/Contents_ai_api
+source .venv/bin/activate
+python full_toc_v4.py --host 0.0.0.0 --port 8080
+```
+
+서버 안에서 확인:
+
+```bash
+curl http://127.0.0.1:8080/health
+```
+
+외부 PC에서 확인:
+
+```bash
+curl http://SERVER_IP:8080/health
+```
+
+### 2.4 서버 상태 확인
 
 ```bash
 curl http://127.0.0.1:8080/health
@@ -120,7 +142,7 @@ curl http://127.0.0.1:8080/health
 {"ok":true,"service":"full_toc_v4","framework":"fastapi"}
 ```
 
-### 2.4 API 문서
+### 2.5 API 문서
 
 ```text
 http://127.0.0.1:8080/docs
@@ -853,28 +875,3 @@ curl http://127.0.0.1:8000/v1/models
 새로 업로드했는데 이전 job_id를 조회하면 이전 실패 상태가 그대로 보입니다.
 
 업로드 응답에서 받은 최신 `job_id`를 사용해야 합니다.
-
----
-
-## 14. GitHub 관리 기준
-
-### 14.1 올리는 파일
-
-- 코드 파일
-- `requirements.txt`
-- `README.md`
-- `PROCESS.md`
-- `smoke_test.py`
-- 필요 시 민감 정보 제거된 `examples/*`
-
-### 14.2 올리지 않는 파일
-
-- `.env`
-- `data/uploads/*`
-- `data/parsed/*`
-- `data/layout/*`
-- `data/full_json/*`
-- `data/log/*`
-- `data/jobs/*`
-
-산출물을 공유해야 하면 `examples/` 폴더에 복사하고, 원본 PDF 경로와 민감한 내용이 들어 있는지 확인한 뒤 commit합니다.
