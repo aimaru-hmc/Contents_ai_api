@@ -39,6 +39,12 @@ pip install -r requirements.txt
 cd /path/to/Contents_ai_api
 ```
 
+예시:
+
+```bash
+cd ~/workspace/Contents_ai_test/Contents_ai_api
+```
+
 ### 1.2 가상환경
 
 새로 만들 때:
@@ -72,7 +78,7 @@ OPENAI_API_KEY=sk-...
 `/jobs/layout/upload`만 사용할 때는 필요 없습니다.
 
 ```bash
-CUDA_VISIBLE_DEVICES=<GPU_IDS> VLLM_USE_FLASHINFER_SAMPLER=0 \
+CUDA_VISIBLE_DEVICES=4,5,6,7 VLLM_USE_FLASHINFER_SAMPLER=0 \
 python -m vllm.entrypoints.openai.api_server \
   --model google/gemma-4-31B-it \
   --served-model-name google/gemma-4-31B-it \
@@ -545,7 +551,7 @@ API endpoint에 따라 stage는 자동 지정됩니다.
 
 ```bash
 curl -X POST http://127.0.0.1:8080/jobs/layout/upload \
-  -F 'file=@/absolute/path/to/file.pdf' \
+  -F 'file=@../Contents_ai_test/data/input/1_2.pdf' \
   -F 'config={"parse_mode":"headings"}'
 ```
 
@@ -608,7 +614,7 @@ data/jobs/JOB_ID/status.json
 
 ```bash
 curl -X POST http://127.0.0.1:8080/jobs/toc/upload \
-  -F 'file=@/absolute/path/to/file.pdf' \
+  -F 'file=@../Contents_ai_test/data/input/1_2.pdf' \
   -F 'config={"parse_mode":"headings"}'
 ```
 
@@ -644,7 +650,7 @@ data/jobs/JOB_ID/status.json
 
 ```bash
 curl -X POST http://127.0.0.1:8080/jobs/gemma/upload \
-  -F 'file=@/absolute/path/to/file.pdf' \
+  -F 'file=@../Contents_ai_test/data/input/1_2.pdf' \
   -F 'config={
     "parse_mode":"headings",
     "layout_file":"data/layout/0727_110700_1_2_0727_110700_layout.json"
@@ -754,7 +760,7 @@ curl http://127.0.0.1:8080/jobs/JOB_ID/files/log
 업로드 전에 같은 경로를 `ls -lh`로 확인합니다.
 
 ```bash
-ls -lh /absolute/path/to/file.pdf
+ls -lh ../Contents_ai_test/data/input/1_2.pdf
 ```
 
 이 명령이 실패하면 `curl -F 'file=@...'`도 실패합니다.
@@ -822,7 +828,7 @@ curl: (26) Failed to open/read local data from file/application
 해결:
 
 ```bash
-ls -lh /absolute/path/to/file.pdf
+ls -lh ../Contents_ai_test/data/input/1_2.pdf
 ```
 
 ### 13.3 Gemma/vLLM 서버 연결 실패
@@ -854,27 +860,3 @@ curl http://127.0.0.1:8000/v1/models
 
 업로드 응답에서 받은 최신 `job_id`를 사용해야 합니다.
 
----
-
-## 14. GitHub 관리 기준
-
-### 14.1 올리는 파일
-
-- 코드 파일
-- `requirements.txt`
-- `README.md`
-- `PROCESS.md`
-- `smoke_test.py`
-- 필요 시 민감 정보 제거된 `examples/*`
-
-### 14.2 올리지 않는 파일
-
-- `.env`
-- `data/uploads/*`
-- `data/parsed/*`
-- `data/layout/*`
-- `data/full_json/*`
-- `data/log/*`
-- `data/jobs/*`
-
-산출물을 공유해야 하면 `examples/` 폴더에 복사하고, 원본 PDF 경로와 민감한 내용이 들어 있는지 확인한 뒤 commit합니다.

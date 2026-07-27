@@ -64,7 +64,7 @@ OPENAI_API_KEY=sk-...
 예시:
 
 ```bash
-CUDA_VISIBLE_DEVICES=<GPU_IDS> VLLM_USE_FLASHINFER_SAMPLER=0 \
+CUDA_VISIBLE_DEVICES=4,5,6,7 VLLM_USE_FLASHINFER_SAMPLER=0 \
 python -m vllm.entrypoints.openai.api_server \
   --model google/gemma-4-31B-it \
   --served-model-name google/gemma-4-31B-it \
@@ -117,14 +117,14 @@ http://127.0.0.1:8080/docs
 파일 확인:
 
 ```bash
-ls -lh /absolute/path/to/file.pdf
+ls -lh ../Contents_ai_test/data/input/1_2.pdf
 ```
 
 layout만 생성:
 
 ```bash
 curl -X POST http://127.0.0.1:8080/jobs/layout/upload \
-  -F 'file=@/absolute/path/to/file.pdf' \
+  -F 'file=@../Contents_ai_test/data/input/1_2.pdf' \
   -F 'config={"parse_mode":"headings"}'
 ```
 
@@ -132,7 +132,7 @@ curl -X POST http://127.0.0.1:8080/jobs/layout/upload \
 
 ```bash
 curl -X POST http://127.0.0.1:8080/jobs/toc/upload \
-  -F 'file=@/absolute/path/to/file.pdf' \
+  -F 'file=@../Contents_ai_test/data/input/1_2.pdf' \
   -F 'config={"parse_mode":"headings"}'
 ```
 

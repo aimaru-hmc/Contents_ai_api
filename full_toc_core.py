@@ -93,6 +93,7 @@ HEADING_PATTERNS = (
     re.compile(r"^[A-Z]\.\s+[A-Za-z가-힣]"),
 )
 AUTHOR_LINE_RE = re.compile(r"^[가-힣]{2,4}(?:,\s*[가-힣]{2,4})+(?:\s*\(.+\))?$")
+CIRCLED_NUMBER_RE = re.compile(r"^[①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳]\s*")
 EXPLANATORY_DELIMITERS = (":", "：", " - ", " – ", " — ")
 EXPLANATORY_PROSE_MARKERS = (
     "한다", "된다", "있다", "없다", "이며", "이고", "하고", "하며", "에서", "에게", "으로", "로서",
@@ -334,7 +335,7 @@ def is_heading_like(
         return False
     if drop_body_size_lines and abs(ratio - 1.0) <= max(0.0, float(body_size_ratio_tolerance)):
         return False
-    if re.match(r"^[①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳]\s*", text) and not bold and ratio < 0.95:
+    if CIRCLED_NUMBER_RE.match(text) and not bold and ratio < 0.95:
         return False
     if any(pattern.match(text) for pattern in HEADING_PATTERNS):
         return len(text) <= max_heading_chars
@@ -349,7 +350,15 @@ def is_heading_like(
     return False
 
 
-def should_keep_formatted_line(formatted: str, *, max_heading_chars: int, drop_author_lines: bool, drop_explanatory_lines: bool, drop_body_size_lines: bool, body_size_ratio_tolerance: float) -> bool:
+def should_keep_formatted_line(
+    formatted: str,
+    *,
+    max_heading_chars: int,
+    drop_author_lines: bool,
+    drop_explanatory_lines: bool,
+    drop_body_size_lines: bool,
+    body_size_ratio_tolerance: float,
+) -> bool:
     match = LINE_RE.match(formatted.strip())
     if not match:
         return False
@@ -375,7 +384,20 @@ def should_keep_formatted_line(formatted: str, *, max_heading_chars: int, drop_a
     )
 
 
-def extract_region_lines(page: Any, bbox: tuple[float, float, float, float] | None, body_size: float, font_ids: dict[str, str], column: str | None, *, parse_mode: str = "full", max_heading_chars: int = 140, drop_author_lines: bool = True, drop_explanatory_lines: bool = True, drop_body_size_lines: bool = DEFAULT_DROP_BODY_SIZE_LINES, body_size_ratio_tolerance: float = DEFAULT_BODY_SIZE_RATIO_TOLERANCE) -> list[str]:
+def extract_region_lines(
+    page: Any,
+    bbox: tuple[float, float, float, float] | None,
+    body_size: float,
+    font_ids: dict[str, str],
+    column: str | None,
+    *,
+    parse_mode: str = "full",
+    max_heading_chars: int = 140,
+    drop_author_lines: bool = True,
+    drop_explanatory_lines: bool = True,
+    drop_body_size_lines: bool = DEFAULT_DROP_BODY_SIZE_LINES,
+    body_size_ratio_tolerance: float = DEFAULT_BODY_SIZE_RATIO_TOLERANCE,
+) -> list[str]:
     region = page.crop(bbox) if bbox else page
     try:
         raw_lines = region.extract_text_lines(layout=False, return_chars=True)
@@ -386,8 +408,18 @@ def extract_region_lines(page: Any, bbox: tuple[float, float, float, float] | No
         if not isinstance(line, dict):
             continue
         formatted = format_layout_line(line=line, body_size=body_size, font_ids=font_ids, column=column)
-        if formatted and (parse_mode != "headings" or should_keep_formatted_line(formatted, max_heading_chars=max_heading_chars, drop_author_lines=drop_author_lines, drop_explanatory_lines=drop_explanatory_lines, drop_body_size_lines=drop_body_size_lines, body_size_ratio_tolerance=body_size_ratio_tolerance)):
-            formatted_lines.append(formatted)
+        if not formatted:
+            continue
+        if parse_mode == "headings" and not should_keep_formatted_line(
+            formatted,
+            max_heading_chars=max_heading_chars,
+            drop_author_lines=drop_author_lines,
+            drop_explanatory_lines=drop_explanatory_lines,
+            drop_body_size_lines=drop_body_size_lines,
+            body_size_ratio_tolerance=body_size_ratio_tolerance,
+        ):
+            continue
+        formatted_lines.append(formatted)
     return formatted_lines
 
 

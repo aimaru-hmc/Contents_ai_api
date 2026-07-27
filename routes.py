@@ -12,11 +12,7 @@ from jobs import job_response, payload_with_stage, save_base64_uploads_for_paylo
 from storage import TERMINAL_STATUSES, read_status, save_uploaded_pdf_bytes, status_path
 
 
-STAGE_BY_ROUTE = {
-    "layout": "layout",
-    "gemma": "gemma",
-    "toc": "all",
-}
+FORM_UPLOAD_FIELDS = ("file", "files", "pdf", "pdfs")
 
 
 router = APIRouter()
@@ -37,11 +33,19 @@ def parse_config(value: Any) -> dict[str, Any]:
     return payload
 
 
+def http_error(status_code: int, error: Exception) -> HTTPException:
+    return HTTPException(status_code=status_code, detail={
+        "ok": False,
+        "error": str(error),
+        "type": type(error).__name__,
+    })
+
+
 async def uploaded_paths_from_form(form: Any, payload: dict[str, Any]) -> list[Path]:
     args = args_from_payload(payload)
     upload_dir = Path(args.data_dir) / "uploads"
     uploaded_paths: list[Path] = []
-    for key in ("file", "files", "pdf", "pdfs"):
+    for key in FORM_UPLOAD_FIELDS:
         for item in form.getlist(key):
             filename = getattr(item, "filename", None)
             read = getattr(item, "read", None)
@@ -66,11 +70,7 @@ def stage_json_endpoint(stage: str):
             uploaded_paths = save_base64_uploads_for_payload(payload_with_forced_stage)
             return create_job(payload_with_forced_stage, uploaded_paths)
         except Exception as error:
-            raise HTTPException(status_code=400, detail={
-                "ok": False,
-                "error": str(error),
-                "type": type(error).__name__,
-            }) from error
+            raise http_error(400, error) from error
     return endpoint
 
 
@@ -83,11 +83,7 @@ def stage_upload_endpoint(stage: str):
             uploaded_paths = await uploaded_paths_from_form(form, payload_with_forced_stage)
             return create_job(payload_with_forced_stage, uploaded_paths)
         except Exception as error:
-            raise HTTPException(status_code=400, detail={
-                "ok": False,
-                "error": str(error),
-                "type": type(error).__name__,
-            }) from error
+            raise http_error(400, error) from error
     return endpoint
 
 
@@ -104,7 +100,7 @@ async def get_job(job_id: str) -> dict[str, Any]:
     try:
         return read_status(job_id)
     except Exception as error:
-        raise HTTPException(status_code=404, detail={"ok": False, "error": str(error)}) from error
+        raise http_error(404, error) from error
 
 
 @router.get("/jobs/{job_id}/result")
@@ -122,28 +118,30 @@ async def get_job_result(job_id: str) -> JSONResponse:
             return JSONResponse(status, status_code=500)
         return JSONResponse(result, status_code=200 if result.get("ok") else 500)
     except Exception as error:
-        raise HTTPException(status_code=404, detail={"ok": False, "error": str(error)}) from error
+        raise http_error(404, error) from error
+
+
+def job_file_path(job_id: str, status: dict[str, Any], file_type: str) -> Path:
+    result = status.get("result") if isinstance(status.get("result"), dict) else {}
+    if file_type == "log":
+        return Path(result.get("log_file") or "")
+    if file_type == "result":
+        created = result.get("created_files") if isinstance(result.get("created_files"), list) else []
+        return Path(created[-1]) if created else Path("")
+    if file_type == "status":
+        return status_path(job_id)
+    raise ValueError("file_type must be one of: log, result, status")
 
 
 @router.get("/jobs/{job_id}/files/{file_type}")
 async def get_job_file(job_id: str, file_type: str):
     try:
-        status = read_status(job_id)
-        result = status.get("result") if isinstance(status.get("result"), dict) else {}
-        if file_type == "log":
-            path = Path(result.get("log_file") or "")
-        elif file_type == "result":
-            created = result.get("created_files") if isinstance(result.get("created_files"), list) else []
-            path = Path(created[-1]) if created else Path("")
-        elif file_type == "status":
-            path = status_path(job_id)
-        else:
-            raise ValueError("file_type must be one of: log, result, status")
+        path = job_file_path(job_id, read_status(job_id), file_type)
         if not path.is_file():
             raise FileNotFoundError(f"File not found for job {job_id}: {file_type}")
         return FileResponse(path)
     except Exception as error:
-        raise HTTPException(status_code=404, detail={"ok": False, "error": str(error)}) from error
+        raise http_error(404, error) from error
 
 
 @router.post("/jobs")

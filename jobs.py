@@ -11,10 +11,11 @@ from storage import make_job_id, now_iso, read_status, summarize_payload, write_
 
 
 def include_result_if_requested(result: dict[str, Any], include_result: bool) -> dict[str, Any]:
-    if include_result and result.get("created_files"):
-        result_path = Path(result["created_files"][-1])
-        if result_path.is_file():
-            result["result"] = json.loads(result_path.read_text(encoding="utf-8"))
+    if not include_result or not result.get("created_files"):
+        return result
+    result_path = Path(result["created_files"][-1])
+    if result_path.is_file():
+        return {**result, "result": json.loads(result_path.read_text(encoding="utf-8"))}
     return result
 
 
